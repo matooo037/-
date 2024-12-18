@@ -37,19 +37,17 @@ void fill_number()
      */
 }
 
-void move_cursor( )
+void move_cursor(char c)
 {
     /* TODO: Move the cursor up, down, to the left or to the right.
              Remember to check if the cursor is moving out of bound.
     */
     int prev_r=cur_r,prev_c=cur_c;
     
-    char direction;
-    cin>>direction;
-    if(direction=='W'||direction=='w') cur_r--; //up
-    if(direction=='S'||direction=='s') cur_r++; //down
-    if(direction=='A'||direction=='a') cur_c--; //left
-    if(direction=='D'||direction=='d') cur_c++; //right
+    if(c=='W'||c=='w') cur_r--; //up
+    if(c=='S'||c=='s') cur_r++; //down
+    if(c=='A'||c=='a') cur_c--; //left
+    if(c=='D'||c=='d') cur_c++; //right
     
     if(cur_r<0||cur_r>=4||cur_c<0||cur_c>=4){
     	cur_r=prev_r;
@@ -191,7 +189,7 @@ int main()
         if (is_moving_action(c))
         {
             action_ok = true;
-            move_cursor();
+            move_cursor(c);
         }
 
         if (is_filling_action(c))
@@ -217,4 +215,3 @@ int main()
 
     return 0;
 }
-
