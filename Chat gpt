@@ -1,0 +1,294 @@
+#include <iostream>
+#include <windows.h>
+
+using namespace std;
+
+int board[4][4] = {
+    {0, 0, 1, 0},
+    {0, 4, 0, 0},
+    {0, 0, 2, 0},
+    {0, 1, 0, 0},
+};
+
+bool editable[4][4];
+
+int cur_r = 0, cur_c = 0;
+
+void check_horizontal()
+{
+    for (int i = 0; i < 4; ++i)
+    {
+        bool finished = true;
+        for (int j = 0; j < 4; ++j)
+        {
+            if (board[i][j] == 0)
+            {
+                finished = false;
+                break;
+            }
+        }
+        if (finished)
+            cout << "Row " << i + 1 << " is finished!" << endl;
+    }
+}
+
+void check_vertical()
+{
+    for (int j = 0; j < 4; ++j)
+    {
+        bool finished = true;
+        for (int i = 0; i < 4; ++i)
+        {
+            if (board[i][j] == 0)
+            {
+                finished = false;
+                break;
+            }
+        }
+        if (finished)
+            cout << "Column " << j + 1 << " is finished!" << endl;
+    }
+}
+
+void check_block()
+{
+    for (int block_row = 0; block_row < 2; ++block_row)
+    {
+        for (int block_col = 0; block_col < 2; ++block_col)
+        {
+            bool finished = true;
+            for (int i = block_row * 2; i < block_row * 2 + 2; ++i)
+            {
+                for (int j = block_col * 2; j < block_col * 2 + 2; ++j)
+                {
+                    if (board[i][j] == 0)
+                    {
+                        finished = false;
+                        break;
+                    }
+                }
+                if (!finished) break;
+            }
+            if (finished)
+                cout << "Block (" << block_row + 1 << "," << block_col + 1 << ") is finished!" << endl;
+        }
+    }
+}
+
+void fill_number()
+{
+    int num;
+    cout << "Enter a number (1-4) to fill: ";
+    cin >> num;
+    if (num < 1 || num > 4)
+    {
+        cout << "Invalid number!" << endl;
+        return;
+    }
+
+    if (editable[cur_r][cur_c])
+    {
+        board[cur_r][cur_c] = num;
+        // After filling the number, check if the row, column, and block are finished.
+        check_horizontal();
+        check_vertical();
+        check_block();
+    }
+}
+
+void move_cursor()
+{
+    char direction;
+    cout << "Enter direction (W/A/S/D): ";
+    cin >> direction;
+
+    if (direction == 'W' || direction == 'w')
+        cur_r = max(0, cur_r - 1);
+    if (direction == 'S' || direction == 's')
+        cur_r = min(3, cur_r + 1);
+    if (direction == 'A' || direction == 'a')
+        cur_c = max(0, cur_c - 1);
+    if (direction == 'D' || direction == 'd')
+        cur_c = min(3, cur_c + 1);
+}
+
+bool is_invalid(int i, int j)
+{
+    // Check if the current position is in a row, column, or block that has a conflict.
+    for (int x = 0; x < 4; x++)
+    {
+        if (x != j && board[i][x] == board[i][j] && board[i][j] != 0)
+            return true;
+        if (x != i && board[x][j] == board[i][j] && board[i][j] != 0)
+            return true;
+    }
+
+    int startRow = (i / 2) * 2;
+    int startCol = (j / 2) * 2;
+    for (int r = startRow; r < startRow + 2; ++r)
+    {
+        for (int c = startCol; c < startCol + 2; ++c)
+        {
+            if ((r != i || c != j) && board[r][c] == board[i][j] && board[i][j] != 0)
+                return true;
+        }
+    }
+    return false;
+}
+
+bool is_done(int i, int j)
+{
+    // Check if the current position is finished.
+    return board[i][j] != 0;
+}
+
+bool check_win()
+{
+    for (int i = 0; i < 4; ++i)
+        for (int j = 0; j < 4; ++j)
+            if (board[i][j] == 0)
+                return false; // The game is not done.
+    return true; // All cells are filled.
+}
+
+bool is_moving_action(char c)
+{
+    return (c == 'W' || c == 'w' || c == 'S' || c == 's' ||
+            c == 'A' || c == 'a' || c == 'D' || c == 'd');
+}
+
+bool is_filling_action(char c)
+{
+    return (c >= '0' && c <= '4');
+}
+
+string get_styled_text(string text, string style)
+{
+    string color = "", font = "";
+    for (char c : style)
+    {
+        if (c == 'R')
+            color = "31";
+        if (c == 'G')
+            color = "32";
+        if (c == 'E')
+            color = "41";
+        if (c == 'C')
+            color = "106";
+        if (c == 'B')
+            font = ";1";
+    }
+    return "\x1b[" + color + font + "m" + text + "\x1b[0m";
+}
+
+void print_board()
+{
+    // Flush the screen
+    cout << "\x1b[2J\x1b[1;1H";
+
+    // Print usage hint.
+    cout << get_styled_text("W/A/S/D: ", "B") << "move cursor" << endl;
+    cout << get_styled_text("    1-4: ", "B") << "fill in number" << endl;
+    cout << get_styled_text("      0: ", "B") << "clear the cell" << endl;
+    cout << get_styled_text("      Q: ", "B") << "quit" << endl;
+    cout << endl;
+
+    // Iterate through and print each cell.
+    for (int i = 0; i < 4; ++i)
+    {
+        // Print horizontal divider.
+        if (i && i % 2 == 0)
+            cout << "---------------" << endl;
+
+        // Print the first vertical divider in each line.
+        cout << "|";
+        for (int j = 0; j < 4; ++j)
+        {
+            // Set text style based on the state of the cell.
+            string style = "";
+
+            // Set style for the cell the cursor pointing to.
+            if (cur_r == i && cur_c == j)
+                style = "C";
+            // Set style for the cell in an invalid line.
+            else if (is_invalid(i, j))
+                style = "E";
+            // Set style for the cell in a finished line.
+            else if (is_done(i, j))
+                style = "G";
+
+            // Set style for a the cell that is immutable.
+            if (!editable[i][j])
+                style += "B";
+
+            // Print the cell out in styled text.
+            // If the content is 0, print a dot, else print the number.
+            if (board[i][j] == 0)
+                cout << get_styled_text(" · ", style);
+            else
+                cout << get_styled_text(" " + to_string(board[i][j]) + " ", style);
+
+            // Print the vertical divider for each block.
+            if ((j + 1) % 2 == 0)
+                cout << "|";
+        }
+        cout << endl;
+    }
+}
+
+void initialize()
+{
+    // Set up styled text for Windows.
+    HANDLE hOut = GetStdHandle(STD_OUTPUT_HANDLE);
+    DWORD dwMode = 0;
+    GetConsoleMode(hOut, &dwMode);
+    dwMode |= ENABLE_VIRTUAL_TERMINAL_PROCESSING;
+    SetConsoleMode(hOut, dwMode);
+
+    // Mark editable cells
+    for (int i = 0; i < 4; ++i)
+        for (int j = 0; j < 4; ++j)
+            editable[i][j] = !board[i][j];
+
+    // Print the initial board out.
+    print_board();
+}
+
+int main()
+{
+    char c;
+    bool action_ok;
+
+    initialize();
+    while (cin >> c)
+    {
+        action_ok = false;
+        if (is_moving_action(c))
+        {
+            action_ok = true;
+            move_cursor();
+        }
+
+        if (is_filling_action(c))
+        {
+            action_ok = true;
+            fill_number();
+        }
+
+        if (c == 'Q' || c == 'q')
+            break;
+
+        print_board();
+
+        if (check_win())
+        {
+            cout << "YOU WIN!" << endl;
+            break;
+        }
+
+        if (!action_ok)
+            cout << get_styled_text("!!! Invalid action !!!", "R");
+    }
+
+    return 0;
+}
