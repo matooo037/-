@@ -18,7 +18,7 @@ int cur_r = 0, cur_c = 0;
 bool check_horizontal(int i, int j, int k) {
 	/* TODO: Check if a horizontal line has conflict number, or is finished. */
     if(k==5) return true;
-    if(check_horizontal(i, k, k+1){
+    if(check_horizontal(i, k, k+1)){
        for (int x = 0; x < 4; ++x) {
             if (board[i][x] == board[i][j] && board[i][j] != 0 && x != j) {
             return false;
