@@ -1,0 +1,322 @@
+
+#include <iostream>
+#include <windows.h>
+
+using namespace std;
+
+int board[4][4] = {
+    {0, 0, 1, 0},
+    {0, 4, 0, 0},
+    {0, 0, 2, 0},
+    {0, 1, 0, 0},
+};
+
+bool editable[4][4];
+
+int cur_r = 0, cur_c = 0;
+
+bool check_horizontal(int i, int j, int k) {
+	/* TODO: Check if a horizontal line has conflict number, or is finished. */
+    if(k==5) return true; /*If k reaches 5, it means the entire row has been checked.*/
+    if(check_horizontal(i, k, k+1)){ 
+    /*If the check for the next number returns true, proceed to check the current number. */
+       for (int x = 0; x < 4; ++x) {
+       	/*Check if the current number conflicts with other numbers:
+		   all numbers in the row and check if there are any other numbers 
+		   that are the same as the current number and not zero.*/
+            if (board[i][x] == board[i][j] && board[i][j] != 0 && x != j) {
+            return false;
+            }
+       }
+       return true;
+    }else{
+       return false;
+    }
+}
+
+bool check_vertical(int i, int j, int k) {
+	/* TODO: Check if a vertical line has conflict number, or is finished. */
+	if(k==5) return true; /*If k reaches 5, it means the entire column has been checked.*/
+	if(check_vertical(k,j,k+1)){
+		/*If the check for the next number returns true, proceed to check the current number.*/
+    for (int x = 0; x < 4; ++x) {
+    	/* Check if the current number conflicts with other numbers:
+    	all numbers in the row and check if there are any other numbers 
+		that are the same as the current number and not zero.*/
+        if (board[x][j] == board[i][j] && board[i][j] != 0 && x != i) {
+            return false;
+        }
+    }
+    return true;
+	}else{
+		return false;
+	}
+}
+
+bool check_block(int i, int j) {
+	 /* TODO: Check if a block has conflict number, or is finished. */
+    int block_row = (i / 2) * 2;
+    int block_col = (j / 2) * 2;
+    for (int x = block_row; x < block_row + 2; ++x) {
+        for (int y = block_col; y < block_col + 2; ++y) {
+            if (board[x][y] != 0 && board[x][y] == board[block_row][block_col] && x != block_row && y != block_col) {
+                return false;
+            }
+        }
+    }
+    /*If a non-empty cell with the same number as the top-left corner is found, return false.*/
+    for (int x = block_row; x < block_row + 2; ++x) {
+        for (int y = block_col; y < block_col + 2; ++y) {
+            if (board[x][y] != 0 && board[x][y] == board[block_row+1][block_col] && x != (block_row+1) && y != block_col) {
+                return false;
+            }
+        }
+    }
+    /*If a non-empty cell with the same number as the bottom-left corner is found, return false.*/
+    for (int x = block_row; x < block_row + 2; ++x) {
+        for (int y = block_col; y < block_col + 2; ++y) {
+            if (board[x][y] != 0 && board[x][y] == board[block_row][block_col+1] && x != block_row && y != (block_col+1)) {
+                return false;
+            }
+        }
+    }
+    /*If a non-empty cell with the same number as the top-right corner is found, return false.*/
+    for (int x = block_row; x < block_row + 2; ++x) {
+        for (int y = block_col; y < block_col + 2; ++y) {
+            if (board[x][y] != 0 && board[x][y] == board[block_row+1][block_col+1] && x != (block_row+1) && y != (block_col+1)) {
+                return false;
+            }
+        }
+    }
+    /*If a non-empty cell with the same number as the bottom-right corner is found, return false.*/
+    return true;
+}
+
+
+void fill_number(char c) {
+	/* TODO: Fill a number in to the cell the cursor is now pointing to.
+             After fill in the number, check the horizontal line, the
+             vertical line and the block the cell is in.
+     */
+    int num = c - '0'; /*Change character 'c' into a number*/
+    if (editable[cur_r][cur_c]) {
+    	/* If the cell is editable,fill the number into the board. */
+        board[cur_r][cur_c] = num;
+    }
+}
+
+void move_cursor(char c) {
+	/* TODO: Move the cursor up, down, to the left or to the right.
+             Remember to check if the cursor is moving out of bound.
+    */
+    int prev_r = cur_r, prev_c = cur_c; 
+	/*Record the previous row and column positions of the cursor*/
+
+    while(true){
+    	/*Loop continues until an editable cell is found or the boundary is reached*/
+    if (c == 'W' || c == 'w') cur_r--; // up
+    if (c == 'S' || c == 's') cur_r++; // down
+    if (c == 'A' || c == 'a') cur_c--; // left
+    if (c == 'D' || c == 'd') cur_c++; // right
+
+    if (cur_r < 0 || cur_r >= 4 || cur_c < 0 || cur_c >= 4) {
+    	/*If the cursor moves beyond the boundary, restore the previous cursor position*/
+        cur_r = prev_r;
+        cur_c = prev_c;
+        break;
+    }
+    if(editable[cur_r][cur_c]){
+    	/* If the new cursor position is editable, exit the loop*/
+    	break;
+	}
+	}
+}
+
+bool finished (int i, int j) {
+    /* "r" is short for row. "c" is short for col. */
+    int x= 0, y= 0, z= 0;
+    for (int c = 0; c < 4; ++c) {
+    	/*Check if the row is complete.*/
+        if (board[i][c] == 0) {
+            x=x+1;
+        }
+    }
+
+    for (int r = 0; r < 4; ++r) {
+    	/*Check if the column is complete. */
+        if (board[r][j] == 0) {
+            y=y+1;
+        }
+    }
+
+    int blockRow = i / 2 * 2; /* Calculate the row of the block. */
+    int blockCol = j / 2 * 2; /* Calculate the column of the block. */
+    for (int r = blockRow; r < blockRow + 2; ++r) {
+    	/*Check if the block is complete. */
+        for (int c = blockCol; c < blockCol + 2; ++c) {
+            if (board[r][c] == 0) {
+                z=z+1;
+            }
+        }
+    }
+    if(x==0||y==0||z==0){
+    	/*If x,y or z is 0,return true*/
+      return true;
+    }else{
+      return false;
+    }
+}
+
+bool is_invalid(int i, int j) {
+	/* TODO: Check if board[i][j] is in a line that has conflict numbers. */
+    return !check_horizontal(i, j, 0) || !check_vertical(i, j, 0) || !check_block(i, j);
+    /*If the row o the column ir the block has conflict, it will return true.*/
+}
+
+bool is_done(int i, int j) {
+	/* TODO: Check if board[i][j] is in a line that has finished. */
+    return finished(i, j)&& !is_invalid(i, j);
+    /*If the row or the column or the block has done and there is no conflict, it will return true.*/
+}
+
+bool check_win() {
+	 /* TODO: Check if the game is set. That is, every cell is finished. */
+    for (int i = 0; i < 4; ++i) {
+        for (int j = 0; j < 4; ++j) {
+            if (!is_done(i, j)) {
+                return false;
+            }
+        }
+    }
+    return true;
+    /*If everything is done, it will return true.*/
+}
+
+bool is_moving_action(char c) {
+    return (c == 'W' || c == 'w' || c == 'S' || c == 's' ||
+            c == 'A' || c == 'a' || c == 'D' || c == 'd');
+}
+
+bool is_filling_action(char c) {
+    return (c >= '0' && c <= '4');
+}
+
+string get_styled_text(string text, string style) {
+    string color = "", font = "";
+    for (char c : style) {
+        if (c == 'R')
+            color = "31";
+        if (c == 'G')
+            color = "32";
+        if (c == 'E')
+            color = "41";
+        if (c == 'C')
+            color = "106";
+        if (c == 'B')
+            font = ";1";
+    }
+    return "\x1b[" + color + font + "m" + text + "\x1b[0m";
+}
+
+void print_board() {
+    // Flush the screen
+    cout << "\x1b[2J\x1b[1;1H";
+
+    // Print usage hint.
+    cout << get_styled_text("W/A/S/D: ", "B") << "move cursor" << endl;
+    cout << get_styled_text("    1-4: ", "B") << "fill in number" << endl;
+    cout << get_styled_text("      0: ", "B") << "clear the cell" << endl;
+    cout << get_styled_text("      Q: ", "B") << "quit" << endl;
+    cout << endl;
+
+    // Iterate through and print each cell.
+    for (int i = 0; i < 4; ++i) {
+        // Print horizontal divider.
+        if (i && i % 2 == 0)
+            cout << "---------------" << endl;
+
+        // Print the first vertical divider in each line.
+        cout << "|";
+        for (int j = 0; j < 4; ++j) {
+            // Set text style based on the state of the cell.
+            string style = "";
+
+            // Set style for the cell the cursor pointing to.
+            if (cur_r == i && cur_c == j)
+                style = "C";
+            // Set style for the cell in an invalid line.
+            else if (is_invalid(i, j))
+                style = "E";
+            // Set style for the cell in a finished line.
+            else if (is_done(i, j))
+                style = "G";
+
+            // Set style for a the cell that is immutable.
+            if (!editable[i][j])
+                style += "B";
+
+            // Print the cell out in styled text.
+            // If the content is 0, print a dot, else print the number.
+            if (board[i][j] == 0)
+                cout << get_styled_text(" · ", style);
+            else
+                cout << get_styled_text(" " + to_string(board[i][j]) + " ", style);
+
+            // Print the vertical divider for each block.
+            if ((j + 1) % 2 == 0)
+                cout << "|";
+        }
+        cout << endl;
+    }
+}
+
+void initialize() {
+    // Set up styled text for Windows.
+    HANDLE hOut = GetStdHandle(STD_OUTPUT_HANDLE);
+    DWORD dwMode = 0;
+    GetConsoleMode(hOut, &dwMode);
+    dwMode |= ENABLE_VIRTUAL_TERMINAL_PROCESSING;
+    SetConsoleMode(hOut, dwMode);
+
+    // Mark editable cells
+    for (int i = 0; i < 4; ++i)
+        for (int j = 0; j < 4; ++j)
+            editable[i][j] = !board[i][j];
+
+    // Print the initial board out.
+    print_board();
+}
+
+int main() {
+    char c;
+    bool action_ok;
+
+    initialize();
+    while (cin >> c) {
+        action_ok = false;
+        if (is_moving_action(c)) {
+            action_ok = true;
+            move_cursor(c);
+        }
+
+        if (is_filling_action(c)) {
+            action_ok = true;
+            fill_number(c);
+        }
+
+        if (c == 'Q' || c == 'q')
+            break;
+
+        print_board();
+
+        if (check_win()) {
+            cout << "YOU WIN!" << endl;
+            break;
+        }
+
+        if (!action_ok)
+            cout << get_styled_text("!!! Invalid action !!!", "R");
+    }
+
+    return 0;
+}
